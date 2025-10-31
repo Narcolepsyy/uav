@@ -1,0 +1,114 @@
+# Default configuration for T-SiamTPN on embedded systems (Jetson Nano)
+project:
+  name: T-SiamTPN
+  version: 0.1.0
+
+device:
+  use_cuda: false
+  cuda_index: 0
+  mixed_precision: false
+  jetson_nano_optimizations: true
+
+model:
+  backbone: shufflenet_v2
+  backbone_pretrained: imagenet
+  backbone_out_stages: [2, 3, 4]
+  compress_channels: 192
+  mpa:
+    num_heads: 4
+    pooling: avg
+    modulation: sigmoid
+    dropout: 0.0
+  heads:
+    cls_channels: [192, 192]
+    reg_channels: [192, 192]
+    num_classes: 2  # target vs background
+    bbox_format: cxcywh
+  params:
+    total_params_millions: 7.33
+    gflops: 1.998
+
+templates:
+  static_count: 1
+  dynamic_count: 4
+  crop_sizes:
+    template: [3, 128, 128]
+    search: [3, 256, 256]
+  temporal:
+    smoothing_alpha: 0.8
+    correction:
+      center_distance_thresh: 0.25
+      scale_ratio_thresh: 0.25
+    update:
+      interval: 5
+      confidence_thresh: 0.5
+      enabled: true
+
+loss:
+  classification: cross_entropy
+  iou: giou
+  l1: true
+  weights:
+    cls: 1.0
+    iou: 2.0
+    l1: 1.0
+
+training:
+  epochs: 50
+  batch_size: 16
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  optimizer: adamw
+  lr_scheduler: cosine
+  warmup_epochs: 3
+  grad_clip_norm: 5.0
+  num_workers: 4
+  seed: 42
+  log_interval: 50
+  save_interval_epochs: 5
+  output_dir: runs
+
+data:
+  dataset_name: observing
+  train_root: observing/train
+  annotations: observing/train/annotations/annotations.json
+  sample_fps: 30
+  template_selection: static+rolling
+  image_mean: [0.485, 0.456, 0.406]
+  image_std: [0.229, 0.224, 0.225]
+  augment:
+    flip: true
+    jitter: true
+    gray: false
+
+inference:
+  fps_target: 7.1
+  conf_thresh: 0.5
+  nms_iou_thresh: 0.6
+  max_track_lost_frames: 30
+
+export:
+  onnx_path: exports/t_siamtpn.onnx
+  opset: 13
+  dynamic_axes: true
+  simplify: true
+  tensorrt:
+    fp16: true
+    int8: false
+    max_workspace_size: 1024
+
+deploy:
+  jetson_nano:
+    use_system_opencv: true
+    torch_source: nvidia_jetpack
+    power_mode: MAXN
+
+logging:
+  level: INFO
+  save_video: false
+  profile_resources: true
+
+benchmark:
+  enabled: true
+  videos_dir: observing/train/samples
+  report_path: reports/benchmark.csv
