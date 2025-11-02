@@ -4,9 +4,9 @@ project:
   version: 0.1.0
 
 device:
-  use_cuda: false
+  use_cuda: true
   cuda_index: 0
-  mixed_precision: false
+  mixed_precision: true
   jetson_nano_optimizations: true
 
 model:

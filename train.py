@@ -183,7 +183,7 @@ def train_one_epoch(epoch: int,
                     device: torch.device,
                     search_size: Tuple[int, int],
                     cfg: Dict[str, Any],
-                    scaler: torch.cuda.amp.GradScaler | None = None) -> Dict[str, float]:
+                    scaler: torch.amp.GradScaler | None = None) -> Dict[str, float]:
     model.train()
     log_interval = int(_get(cfg, ["training", "log_interval"], 50))
     grad_clip_norm = float(_get(cfg, ["training", "grad_clip_norm"], 5.0))
@@ -200,7 +200,7 @@ def train_one_epoch(epoch: int,
         optimizer.zero_grad(set_to_none=True)
 
         if use_amp and scaler is not None:
-            with torch.cuda.amp.autocast(dtype=torch.float16):
+            with torch.amp.autocast(device_type="cuda", dtype=torch.float16):
                 outputs = model(search_img=search_img, templates_imgs=templates_imgs)
                 loss_dict = losses(outputs, target_box_px, search_size)
                 loss = loss_dict["loss_total"]
@@ -279,8 +279,8 @@ def main():
     save_interval = int(_get(cfg, ["training", "save_interval_epochs"], 5))
 
     use_amp = bool(_get(cfg, ["device", "mixed_precision"], True)) and device.type == "cuda"
-    scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
-
+    scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+    
     print(f"Max templates per sample: {max_templates} | Template size: {template_size} | Search size: {search_size}")
 
     # Training loop
@@ -295,7 +295,7 @@ def main():
         except Exception:
             pass
 
-        if (epoch % save_interval) == 0 or epoch == epochs:
+        if epoch == 1 or (epoch % save_interval) == 0 or epoch == epochs:
             save_checkpoint(output_dir, epoch, model, optimizer, cfg)
 
     print("Training complete.")

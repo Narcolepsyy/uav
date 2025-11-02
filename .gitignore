@@ -40,7 +40,6 @@ dist/
 .eggs/
 
 # Model/export artifacts
-runs/
 reports/
 exports/
 
@@ -54,4 +53,5 @@ Thumbs.db
 
 # Ignore large dataset files
 ai_zalo_dataset.zip
-ai_zalo_dataset.zip
+observing
+public_test
